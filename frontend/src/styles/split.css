@@ -1,0 +1,16 @@
+/* frontend/src/styles/split.css */
+
+.gutter {
+    background-color: #4a5568; /* A dark gray */
+    background-repeat: no-repeat;
+    background-position: 50%;
+    cursor: col-resize; /* Indicates horizontal resizing */
+}
+
+.gutter.gutter-horizontal {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bM/5+BgeEzkA2g8gJAnA4A4gIAKA4A/A8A4g8gAQDXI1/Z+PLlDAAAAABJRU5ErkJggg==');
+}
+
+.gutter.gutter-horizontal:hover {
+    background-color: #718096; /* Lighter gray on hover */
+}
