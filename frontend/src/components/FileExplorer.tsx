@@ -12,6 +12,7 @@ interface FileExplorerProps {
     sendMessage: (message: object) => void;
     refetchTrigger: number;
     activeFileId: string | null;
+    isReadOnly : boolean,
 }
 
 const InlineInput = ({ type, defaultValue = "", onSubmit, onCancel }: any) => {

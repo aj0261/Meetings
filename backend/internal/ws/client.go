@@ -3,7 +3,6 @@ package ws
 import (
 	"github.com/gorilla/websocket"
 	"log"
-	"sync" // **NEW**: Import the sync package for the mutex
 	"time"
 )
 
@@ -26,9 +25,8 @@ type Client struct {
 	ProjectID string
 	UserID    string
 	Username  string
-	// **NEW**: Add a mutex and a flag to prevent race conditions on disconnect.
-	mu        sync.Mutex
-	isClosing bool
+	Role      string
+	
 }
 
 // readPump pumps messages from the websocket connection to the hub.

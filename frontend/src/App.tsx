@@ -5,7 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProjectWorkspacePage from './pages/ProjectWorkspacePage'; 
-
+import InviteAcceptPage from './pages/InviteAcceptPage';
 // This component handles the root URL logic. It doesn't need any changes.
 function Root() {
   const { isAuthenticated } = useAuth();
@@ -38,6 +38,7 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
+                <Route path="/invite/:inviteCode" element={<InviteAcceptPage />} />
               </Route>
             </Routes>
           </div>

@@ -16,6 +16,7 @@
     "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "konva": "^9.3.22",
+    "lucide-react": "^0.539.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.1.0",
     "react-contexify": "^6.0.0",
@@ -25,6 +26,7 @@
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.7.1",
     "react-split": "^2.0.14",
+    "react-split-pane": "^0.1.92",
     "react-use-measure": "^2.1.7",
     "tailwindcss": "^4.1.11",
     "uuid": "^11.1.0"
@@ -35,6 +37,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-modal": "^3.16.3",
+    "@types/react-split-pane": "^0.1.10",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.6.0",
     "eslint": "^9.30.1",

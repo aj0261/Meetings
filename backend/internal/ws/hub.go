@@ -1,8 +1,12 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"log"
+	"project-meetings/backend/internal/database"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type WsMessage struct {
@@ -195,7 +199,6 @@ func (h *Hub) Run() {
 				log.Printf("[Hub] Error unmarshalling message: %v", err)
 				continue
 			}
-
 			switch msg.Type {
 			case "webrtc_join":
 				log.Printf("[Hub] %s requested to join WebRTC in project %s", message.Sender.UserID, message.ProjectID)
@@ -263,8 +266,36 @@ func (h *Hub) Run() {
 					var payload map[string]string
 					if err := json.Unmarshal(msg.Payload, &payload); err == nil {
 						if fileID, ok := payload["fileId"]; ok {
-							content := projectState.EditorContents[fileID]
-							responsePayload, _ := json.Marshal(map[string]string{"fileId": fileID, "content": content})
+
+							var contentToSend string
+
+							// First, check if we have a "live" version in our in-memory map.
+							content, contentExists := projectState.EditorContents[fileID]
+
+							if contentExists {
+								// --- HOT PATH ---
+								// The file is active. Serve the latest version from memory.
+								contentToSend = content
+							} else {
+								// --- COLD PATH ---
+								// No one has touched this file since the server started.
+								// Load it from the database for the first time.
+								log.Printf("No in-memory version for file %s. Loading from DB.", fileID)
+								var dbContent pgtype.Text
+								query := `SELECT content FROM files WHERE id = $1`
+								err := database.DB.QueryRow(context.Background(), query, fileID).Scan(&dbContent)
+								if err != nil {
+									log.Printf("Failed to query file content for %s: %v", fileID, err)
+									contentToSend = "// File content could not be loaded."
+								} else {
+									contentToSend = dbContent.String
+								}
+								// Store it in memory for the next person who asks.
+								projectState.EditorContents[fileID] = contentToSend
+							}
+
+							// Send the definitive content to the requester.
+							responsePayload, _ := json.Marshal(map[string]string{"fileId": fileID, "content": contentToSend})
 							response := WsMessage{Type: "editor_update", Payload: responsePayload}
 							jsonMsg, _ := json.Marshal(response)
 							message.Sender.Send <- jsonMsg
@@ -284,6 +315,20 @@ func (h *Hub) Run() {
 							var shape map[string]interface{}
 							if err := json.Unmarshal(shapeData, &shape); err == nil {
 								if shapeID, ok := shape["id"].(string); ok {
+									// 1. Update in-memory state for live broadcast
+									projectState.WhiteboardShapes[shapeID] = string(shapeData)
+									// 2. NEW: Persist to the database (UPSERT logic)
+									query := `
+                            INSERT INTO whiteboard_shapes (id, project_id, shape_data, updated_at)
+                            VALUES ($1, $2, $3, NOW())
+                            ON CONFLICT (id, project_id) DO UPDATE SET
+                            shape_data = EXCLUDED.shape_data,
+                            updated_at = NOW();
+                        `
+									_, err := database.DB.Exec(context.Background(), query, shapeID, message.ProjectID, shapeData)
+									if err != nil {
+										log.Printf("Failed to save whiteboard shape: %v", err)
+									}
 									projectState.WhiteboardShapes[shapeID] = string(shapeData)
 								}
 							}
@@ -293,12 +338,20 @@ func (h *Hub) Run() {
 					var payload map[string]string
 					if err := json.Unmarshal(msg.Payload, &payload); err == nil {
 						if shapeID, ok := payload["id"]; ok {
+							// 1. Remove from in-memory state
 							delete(projectState.WhiteboardShapes, shapeID)
+
+							// 2. NEW: Delete from the database
+							query := `DELETE FROM whiteboard_shapes WHERE id = $1 AND project_id = $2`
+							_, err := database.DB.Exec(context.Background(), query, shapeID, message.ProjectID)
+							if err != nil {
+								log.Printf("Failed to delete whiteboard shape: %v", err)
+							}
 						}
 					}
 				case "file_created", "file_deleted", "file_renamed":
-				// These are just notifications for other clients. We don't need to store
-				// any state for them here, just let them be broadcast.
+					// These are just notifications for other clients. We don't need to store
+					// any state for them here, just let them be broadcast.
 				}
 				if shouldBroadcast {
 					if clientsInRoom, ok := h.Clients[message.ProjectID]; ok {

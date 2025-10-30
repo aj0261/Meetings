@@ -21,12 +21,13 @@ const AudioPlayer: React.FC<{ stream: MediaStream }> = ({ stream }) => {
 };
 
 interface WebRTCCallProps {
+    userId: string;
     messages: WsMessage[];
     sendMessage: (msg: WsMessage) => void;
     onCallEnd: () => void;
 }
 
-export const WebRTCCall: React.FC<WebRTCCallProps> = ({ messages, sendMessage, onCallEnd }) => {
+export const WebRTCCall: React.FC<WebRTCCallProps> = ({ messages, sendMessage, onCallEnd, userId }) => {
     const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -86,7 +87,10 @@ export const WebRTCCall: React.FC<WebRTCCallProps> = ({ messages, sendMessage, o
 
             peerConnectionRef.current.onicecandidate = (event) => {
                 if (event.candidate) {
-                    sendMessage({ type: 'webrtc_ice_candidate', payload: { target: 'sfu', data: event.candidate.toJSON() } });
+                    sendMessage({
+                        type: 'webrtc_ice_candidate',
+                        payload: { target: 'sfu', sender: userId, data: event.candidate.toJSON() }
+                    });
                 }
             };
 
@@ -113,7 +117,10 @@ export const WebRTCCall: React.FC<WebRTCCallProps> = ({ messages, sendMessage, o
                     }
                 }
 
-                sendMessage({ type: 'webrtc_answer', payload: { target: 'sfu', data: answer } });
+                sendMessage({
+                    type: 'webrtc_answer',
+                    payload: { target: 'sfu', sender: userId, data: answer }
+                });
             } catch (error) {
                 console.error("Error during offer/answer exchange:", error);
             }

@@ -118,7 +118,33 @@ func CreateFileNode(w http.ResponseWriter, r *http.Request) {
 
 // TODO: We will also need handlers for Update (rename, move, save content) and Delete.
 // Let's build Get and Create first.
+// In file_handlers.go
+func SaveFileContent(w http.ResponseWriter, r *http.Request) {
+    fileIDStr := chi.URLParam(r, "fileId")
+    fileID, err := uuid.Parse(fileIDStr)
+    if err != nil {
+        http.Error(w, "Invalid file ID", http.StatusBadRequest)
+        return
+    }
 
+    var req struct {
+        Content string `json:"content"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid request body", http.StatusBadRequest)
+        return
+    }
+
+    query := `UPDATE files SET content = $1, updated_at = NOW() WHERE id = $2`
+    _, err = database.DB.Exec(context.Background(), query, req.Content, fileID)
+    if err != nil {
+        log.Printf("Failed to save file content: %v", err)
+        http.Error(w, "Failed to save file", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+}
 // RenameFileNode handles renaming a file or folder.
 func RenameFileNode(w http.ResponseWriter, r *http.Request) {
 	fileIDStr := chi.URLParam(r, "fileId")

@@ -22,7 +22,6 @@ const LoginPage: React.FC = () => {
       setError(err.response?.data || 'Login failed. Please try again.');
     }
   };
-
   return <AuthForm isLogin={true} onSubmit={handleLogin} error={error} />;
 };
 

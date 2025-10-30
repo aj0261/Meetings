@@ -20,8 +20,9 @@ const useWebSocket = (projectId: string | undefined) => {
     }
 
     // CORRECTED URL: This now matches our new top-level route in main.go
-    const wsUrl = `ws://localhost:8080/ws/${projectId}?auth_token=${token}`;
-    
+    const wsUrlBase = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
+    const wsUrl = `${wsUrlBase}/ws/${projectId}?auth_token=${token}`;
+
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
